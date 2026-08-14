@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import warnings
+import urllib.request
 warnings.filterwarnings("ignore")
 
 # ── Streamlit (installed via pip) ────────────────────────────
@@ -95,6 +96,40 @@ if _missing:
     )
     st.stop()
 
+# ════════════════════════════════════════════════════════════
+# SAM CHECKPOINT — automatically download if missing
+# ════════════════════════════════════════════════════════════
+
+SAM_URL = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SAM_CHECKPOINT = os.path.join(BASE_DIR, "sam_vit_b_01ec64.pth")
+
+
+def ensure_sam_checkpoint():
+    """Download SAM ViT-B checkpoint automatically if it is missing."""
+
+    if os.path.exists(SAM_CHECKPOINT):
+        return SAM_CHECKPOINT
+
+    st.info("📥 SAM ViT-B model not found. Downloading model (~375 MB)...")
+
+    try:
+        urllib.request.urlretrieve(
+            SAM_URL,
+            SAM_CHECKPOINT
+        )
+
+        st.success("✅ SAM ViT-B model downloaded successfully.")
+
+        return SAM_CHECKPOINT
+
+    except Exception as e:
+        st.error(
+            f"❌ Could not download SAM ViT-B checkpoint.\n\n"
+            f"Error: {e}"
+        )
+        st.stop()
 
     # ════════════════════════════════════════════════════════════
 # AGENTIC AUTO-CALIBRATION — no human input needed
@@ -331,11 +366,9 @@ st.markdown(
 # ════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("### ⚙️ Model")
-    sam_ckpt = st.text_input(
-        "SAM ViT-B checkpoint path",
-        value="sam_vit_b_01ec64.pth",
-        help="Full path to sam_vit_b_01ec64.pth",
-    )
+    sam_ckpt = ensure_sam_checkpoint()
+
+    st.caption("SAM ViT-B checkpoint ready ✓")
     device_choice = st.selectbox("Device", ["auto", "cuda", "cpu"])
 
     st.markdown("---")
